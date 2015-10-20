@@ -4,7 +4,7 @@
 # vars #
 ########
 
-RPACKAGES=""
+CLILIST=""
 RLIST=""
 RGLOBAL=""
 RFILENAME=$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 32 | head -n 1)
@@ -39,7 +39,7 @@ display_help() {
 
 split_list() {
     IFS=","
-    for i in $RPACKAGES; do
+    for i in $CLILIST; do
         if [ -z "$RLIST" ]; then
             RLIST="'${i}'"
         else
@@ -57,6 +57,71 @@ echo
 install_user() {
     R --vanilla < /tmp/$RFILENAME
     rm -f /tmp/$RFILENAME
+}
+
+install_code() {
+    cat <<EOF > /tmp/$RFILENAME
+
+options('repos'='http://cran.rstudio.com')
+
+install.packages(c($RLIST))
+
+EOF
+}
+
+remove_code() {
+    cat <<EOF > /tmp/$RFILENAME
+
+remove.packages(c($RLIST))
+
+EOF
+}
+
+test_code() {
+    cat <<EOF > /tmp/$RFILENAME
+
+options('repos'='http://cran.rstudio.com', 'warn'=-1)
+
+check_package <- function(pkg) {
+    if (require(pkg, character.only = TRUE)) {
+        echo_string <- paste0('echo ', pkg, ' library loaded')
+    } else {
+        echo_string <- paste0('echo ', pkg, ' library did not load')
+    }
+    system('echo')
+    system(echo_string)
+    system('echo')
+}
+
+sink('/dev/null') # suppress output
+
+pkgs <- c($RLIST)
+
+lapply(pkgs, check_package)
+
+sink() # resume producing output
+options('warn'=0) # reset warnings
+
+EOF
+}
+
+update_code() {
+    if [ -z "$CLILIST" ]; then
+        cat <<EOF > /tmp/$RFILENAME
+options('repos'='http://cran.rstudio.com')
+
+update.packages(ask = FALSE)
+
+EOF
+    else
+        cat <<EOF > /tmp/$RFILENAME
+
+options('repos'='http://cran.rstudio.com')
+
+update.packages(oldPkgs = c($RLIST), ask = FALSE)
+
+EOF
+    fi
 }
 
 ########
@@ -92,7 +157,7 @@ while [[ $# > 0 ]]; do
             RGLOBAL="Y"
             ;;
         *)
-            RPACKAGES="$1" 
+            CLILIST="$1" 
             ;;
     esac
 
@@ -105,68 +170,28 @@ done
 ##########
 
 split_list  # side effect is to produce RLIST
+            # RLIST is a quoted list of packages
+            #   e.g. dplyr,ggplot2 becomes 'dplyr','ggplot2'
 
-if [ "$ACTION" = "install" ]; then
-    cat <<EOF > /tmp/$RFILENAME
 
-options('repos'='http://cran.rstudio.com')
+case $ACTION in # side effect is to produce RFILENAME containing R code
+    install)
+        install_code
+        ;;
+    remove)
+        remove_code
+        ;;
+    test)
+        test_code
+        ;;
+    update)
+        update_code
+        ;;
+    *)
+        echo "Action must be one of install, remove, test, update" 
+        ;;
 
-install.packages(c($RLIST))
-
-EOF
-elif [ "$ACTION" = "remove" ]; then
-    cat <<EOF > /tmp/$RFILENAME
-
-remove.packages(c($RLIST))
-
-EOF
-elif [ "$ACTION" = "test" ]; then
-    cat <<EOF > /tmp/$RFILENAME
-
-options('repos'='http://cran.rstudio.com', 'warn'=-1)
-
-check_package <- function(pkg) {
-    if (require(pkg, character.only = TRUE)) {
-        echo_string <- paste0('echo ', pkg, ' library loaded')
-    } else {
-        echo_string <- paste0('echo ', pkg, ' library did not load')
-    }
-    system('echo')
-    system(echo_string)
-    system('echo')
-}
-
-sink('/dev/null') # suppress output
-
-pkgs <- c($RLIST)
-
-lapply(pkgs, check_package)
-
-sink() # resume producing output
-options('warn'=0) # reset warnings
-
-EOF
-elif [ "$ACTION" = "update" ]; then
-    if [ -z "$RPACKAGES" ]; then
-        cat <<EOF > /tmp/$RFILENAME
-options('repos'='http://cran.rstudio.com')
-
-update.packages(ask = FALSE)
-
-EOF
-    else
-        cat <<EOF > /tmp/$RFILENAME
-
-options('repos'='http://cran.rstudio.com')
-
-update.packages(oldPkgs = c($RLIST), ask = FALSE)
-
-EOF
-    fi
-else
-    echo "Action must be one of install, remove, test, update" 
-    echo
-fi
+esac
 
 #######
 # run #
