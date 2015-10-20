@@ -17,7 +17,8 @@ radon [option...] [R packages]
 ```
 
 ## Assumptions
-If using global option, assumes ability to run sudo.
+* If using global option, assumes ability to run sudo.
+* R packages must be comma delimited without quotes; see examples below.
 
 ## Examples
 ```
