@@ -1,6 +1,6 @@
 # radon
 
-#### **r** **ad**min **o**n \***n**ix
+**r** **ad**min **o**n \***n**ix
 {install,remove,test,update} R packages. By default performs action for the user and not globally."
 
 ## Usage
