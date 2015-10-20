@@ -1,0 +1,182 @@
+#!/bin/bash
+
+########
+# vars #
+########
+
+RPACKAGES=""
+RLIST=""
+RGLOBAL=""
+RFILENAME=$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 32 | head -n 1)
+
+########
+# fncs #
+########
+
+display_help() {
+    echo
+    echo "{install,remove,test,update} R packages.  By default performs action for the user and not globally."
+    echo
+    echo "Usage: ${0} [option...] [R packages]"
+    echo
+    echo "  -h, --help          display help"
+    echo "  -g, --global        perform action globally"
+    echo "  -i, --install       install R package(s)"
+    echo "  -t, --test          test R package(s)"
+    echo "  -r, --remove        remove R package(s)"
+    echo "  -u, --update        update R package(s); if no package given update all packages"
+    echo
+    echo "Example: "
+    echo "  ${0} --install dplyr,ggplot2 # install dplyr,ggplot2 packages for the user"
+    echo
+    echo "  ${0} --remove dplyr,ggplot2 # remove dplyr,ggplot2 packages for the user"
+    echo
+    echo "  ${0} --test dplyr,ggplot2 -g # test dplyr,ggplot2 packages globally"
+    echo
+    echo "  ${0} --update # update all packages for the user"
+    echo
+}
+
+split_list() {
+    IFS=","
+    for i in $RPACKAGES; do
+        if [ -z "$RLIST" ]; then
+            RLIST="'${i}'"
+        else
+            RLIST+=",'${i}'"
+        fi
+    done
+}
+
+install_global() {
+    sudo su - -c "R --vanilla < /tmp/$RFILENAME"
+    rm -f /tmp/$RFILENAME
+echo
+}
+
+install_user() {
+    R --vanilla < /tmp/$RFILENAME
+    rm -f /tmp/$RFILENAME
+}
+
+########
+# args #
+########
+
+# Use > 1 to consume two arguments per pass in the loop
+#   each argument has a corresponding value to go with it
+# Use > 0 to consume one or more arguments per pass in the loop
+#   some arguments don't have a corresponding value to go with it
+
+while [[ $# > 0 ]]; do
+    key="$1"
+
+    case $key in
+        -h | --help)
+            display_help
+            exit 0
+            ;;
+        -i | --install)
+            ACTION="install"
+            ;;
+        -r | --remove)
+            ACTION="remove"
+            ;;
+        -t | --test)
+            ACTION="test"
+            ;;
+        -u | --update)
+            ACTION="update"
+            ;;
+        -g | --global)
+            RGLOBAL="Y"
+            ;;
+        *)
+            RPACKAGES="$1" 
+            ;;
+    esac
+
+    shift
+
+done
+
+##########
+# R code #
+##########
+
+split_list  # side effect is to produce RLIST
+
+if [ "$ACTION" = "install" ]; then
+    cat <<EOF > /tmp/$RFILENAME
+
+options('repos'='http://cran.rstudio.com')
+
+install.packages(c($RLIST))
+
+EOF
+elif [ "$ACTION" = "remove" ]; then
+    cat <<EOF > /tmp/$RFILENAME
+
+remove.packages(c($RLIST))
+
+EOF
+elif [ "$ACTION" = "test" ]; then
+    cat <<EOF > /tmp/$RFILENAME
+
+options('repos'='http://cran.rstudio.com', 'warn'=-1)
+
+check_package <- function(pkg) {
+    if (require(pkg, character.only = TRUE)) {
+        echo_string <- paste0('echo ', pkg, ' library loaded')
+    } else {
+        echo_string <- paste0('echo ', pkg, ' library did not load')
+    }
+    system('echo')
+    system(echo_string)
+    system('echo')
+}
+
+sink('/dev/null') # suppress output
+
+pkgs <- c($RLIST)
+
+lapply(pkgs, check_package)
+
+sink() # resume producing output
+options('warn'=0) # reset warnings
+
+EOF
+elif [ "$ACTION" = "update" ]; then
+    if [ -z "$RPACKAGES" ]; then
+        cat <<EOF > /tmp/$RFILENAME
+options('repos'='http://cran.rstudio.com')
+
+update.packages(ask = FALSE)
+
+EOF
+    else
+        cat <<EOF > /tmp/$RFILENAME
+
+options('repos'='http://cran.rstudio.com')
+
+update.packages(oldPkgs = c($RLIST), ask = FALSE)
+
+EOF
+    fi
+else
+    echo "Action must be one of install, remove, test, update" 
+    echo
+fi
+
+#######
+# run #
+#######
+
+echo "${ACTION} the packages ${RLIST}..."
+echo
+
+if [ -n "$RGLOBAL" ]; then
+    install_global
+else
+    install_user
+fi
