@@ -2,25 +2,24 @@
 
 **r** **ad**min **o**n \***n**ix
 
-{install,remove,test,update} R packages. By default performs action for the user and not globally."
+{install,remove,test,update} R packages. By default performs action for the user and not globally.
 
 ## Usage
 ```
-radon [option...] [R packages]"
+radon [option...] [R packages]
 
     -h, --help          display help
     -g, --global        perform action globally
     -i, --install       install R package(s)
     -t, --test          test R package(s)
     -r, --remove        remove R package(s)
-    -u, --update        update R package(s); if no package given update all packages"
-s all packages
+    -u, --update        update R package(s); if no package given update all packages
 ```
 
 ## Assumptions
-If using global option, assumes ability to run sudo
+If using global option, assumes ability to run sudo.
 
-## Example
+## Examples
 ```
 radon --install dplyr,ggplot2 # install dplyr,ggplot2 packages for the user
 
