@@ -37,7 +37,7 @@ display_help() {
     echo
 }
 
-split_list() {
+quote_list() {
     IFS=","
     for i in $CLILIST; do
         if [ -z "$RLIST" ]; then
@@ -108,6 +108,7 @@ EOF
 update_code() {
     if [ -z "$CLILIST" ]; then
         cat <<EOF > /tmp/$RFILENAME
+        
 options('repos'='http://cran.rstudio.com')
 
 update.packages(ask = FALSE)
@@ -169,7 +170,7 @@ done
 # R code #
 ##########
 
-split_list  # side effect is to produce RLIST
+quote_list  # side effect is to produce RLIST
             # RLIST is a quoted list of packages
             #   e.g. dplyr,ggplot2 becomes 'dplyr','ggplot2'
 
