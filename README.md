@@ -19,7 +19,7 @@ radon [option...] [R packages]
 ## Assumptions
 * If using global option, assumes ability to run sudo.
 * R packages must be comma delimited without quotes; see examples below.
-* Assumes package is available on CRAN; cannot install from github
+* Assumes package is available on CRAN; cannot install from github ([yet](https://github.com/curtisalexander/radon/issues/1))
 
 ## Examples
 ```
