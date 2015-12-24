@@ -7,7 +7,10 @@
 CLILIST=""
 RLIST=""
 RGLOBAL=""
-RFILENAME=$(cat /dev/urandom | LC_CTYPE=C tr -dc 'a-zA-Z0-9' | fold -w 32 | head -n 1)
+INSTALLED=""
+RFILENAME=""
+GITHUBFILENAME=""
+ENVFILENAME=""
 
 ########
 # fncs #
@@ -37,60 +40,116 @@ display_help() {
     echo
 }
 
-quote_list() {
-    IFS=","
-    for i in $CLILIST; do
-        if [ -z "$RLIST" ]; then
-            RLIST="'${i}'"
+create_tmp() {
+    echo "$(cat /dev/urandom | LC_CTYPE=C tr -dc 'a-zA-Z0-9' | fold -w 32 | head -n 1)"
+}
+
+check_devtools() {
+    # $1 = ENVFILENAME
+    # $2 = RGLOBAL
+    source /tmp/$1 # read file to get the value of INSTALLED
+    rm -f /tmp/$1
+
+    if [ "$INSTALLED" == "1" ]; then
+        echo
+        echo "devtools is installed"
+        echo
+    else
+        echo
+        echo "please install devtools"
+        echo
+        if [ "$2" == "Y" ]; then
+            echo "    $ radon --install devtools -g"
         else
-            RLIST+=",'${i}'"
+            echo "    $ radon --install devtools"
+        fi
+        echo
+        exit 0
+    fi
+}
+
+quote_list() {
+    # $1 = CLILIST
+    local _RLIST=""
+    IFS=","
+    for i in $1; do
+        if [ -z "$_RLIST" ]; then
+            _RLIST="'${i}'"
+            # RLIST="'${i}'"
+        else
+            _RLIST+=",'${i}'"
         fi
     done
+    echo "$_RLIST"
 }
 
-install_global() {
+action_global() {
+    # $1 = RFILENAME | GITHUBFILENAME
     if [[ "$(uname)" == "Darwin" ]]; then
-        sudo R --vanilla < /tmp/$RFILENAME
+        sudo R --vanilla < /tmp/$1
     else
-        sudo su - -c "R --vanilla < /tmp/$RFILENAME"
+        sudo su - -c "R --vanilla < /tmp/$1"
     fi
-    rm -f /tmp/$RFILENAME
-echo
+    rm -f /tmp/$1
 }
 
-install_user() {
-    R --vanilla < /tmp/$RFILENAME
-    rm -f /tmp/$RFILENAME
+action_user() {
+    # $1 = RFILENAME | GITHUBFILENAME
+    R --vanilla < /tmp/$1
+    rm -f /tmp/$1
 }
 
 install_code() {
-    cat <<EOF > /tmp/$RFILENAME
+    # $1 = RLIST
+    # $2 = RFILENAME
+    cat <<EOF > /tmp/$2
 
 options('repos'='http://cran.rstudio.com')
 
-install.packages(c($RLIST))
+install.packages(c($1))
 
 EOF
 }
 
-remove_code() {
-    cat <<EOF > /tmp/$RFILENAME
+install_github_code() {
+    # $1 = RLIST
+    # $2 = GITHUBFILENAME
+    cat <<EOF > /tmp/$2
 
-remove.packages(c($RLIST))
+library('devtools')
+devtools::install_github($1)
+
+EOF
+}
+remove_code() {
+    # $1 = RLIST
+    # $2 = RFILENAME
+    cat <<EOF > /tmp/$2
+
+remove.packages(c($1))
 
 EOF
 }
 
 test_code() {
-    cat <<EOF > /tmp/$RFILENAME
+    # $1 = RLIST
+    # $2 = RFILENAME
+    # $3 = ENVFILENAME
+    cat <<EOF > /tmp/$2
 
 options('repos'='http://cran.rstudio.com', 'warn'=-1)
+
+f <- file("/tmp/$3")
 
 check_package <- function(pkg) {
     if (require(pkg, character.only = TRUE)) {
         echo_string <- paste0('echo ', pkg, ' library loaded')
+        writeLines("export INSTALLED=\"1\"", f)
+        close(f)
     } else {
         echo_string <- paste0('echo ', pkg, ' library did not load')
+        writeLines("export INSTALLED=\"0\"", f)
+        close(f)
     }
     system('echo')
     system(echo_string)
@@ -99,7 +158,7 @@ check_package <- function(pkg) {
 
 sink('/dev/null') # suppress output
 
-pkgs <- c($RLIST)
+pkgs <- c($1)
 
 lapply(pkgs, check_package)
 
@@ -110,8 +169,11 @@ EOF
 }
 
 update_code() {
-    if [ -z "$CLILIST" ]; then
-        cat <<EOF > /tmp/$RFILENAME
+    # $1 = RLIST
+    # $2 = RFILENAME
+    # $3 = CLILIST
+    if [ -z "$3" ]; then
+        cat <<EOF > /tmp/$2
         
 options('repos'='http://cran.rstudio.com')
 
@@ -119,11 +181,11 @@ update.packages(ask = FALSE)
 
 EOF
     else
-        cat <<EOF > /tmp/$RFILENAME
+        cat <<EOF > /tmp/$2
 
 options('repos'='http://cran.rstudio.com')
 
-update.packages(oldPkgs = c($RLIST), ask = FALSE)
+update.packages(oldPkgs = c($1), ask = FALSE)
 
 EOF
     fi
@@ -148,6 +210,9 @@ while [[ $# > 0 ]]; do
             ;;
         -i | --install)
             ACTION="install"
+            ;;
+        --install_github)
+            ACTION="install_github"
             ;;
         -r | --remove)
             ACTION="remove"
@@ -174,26 +239,34 @@ done
 # R code #
 ##########
 
-quote_list  # side effect is to produce RLIST
-            # RLIST is a quoted list of packages
-            #   e.g. dplyr,ggplot2 becomes 'dplyr','ggplot2'
+RFILENAME="$(create_tmp)"
+ENVFILENAME="$(create_tmp)"
+RLIST="$(quote_list "$CLILIST")"    # return RLIST
+                                    # RLIST is a quoted list of packages
+                                    #   e.g. dplyr,ggplot2 becomes 'dplyr','ggplot2'
 
 
-case $ACTION in # side effect is to produce RFILENAME containing R code
+case $ACTION in # side effect is to produce tmp file containing R code
+                # install_github creates two tmp files containing R code
     install)
-        install_code
+        install_code "$RLIST" "$RFILENAME"
         ;;
     remove)
-        remove_code
+        remove_code "$RLIST" "$RFILENAME"
         ;;
     test)
-        test_code
+        test_code "$RLIST" "$RFILENAME" "$ENVFILENAME" 
         ;;
     update)
-        update_code
+        update_code "$RLIST" "$RFILENAME" "$CLILIST"
+        ;;
+    install_github)
+        test_code "$(quote_list "devtools")" "$RFILENAME" "$ENVFILENAME"
+        GITHUBFILENAME="$(create_tmp)"
+        install_github_code "$RLIST" "$GITHUBFILENAME"
         ;;
     *)
-        echo "Action must be one of install, remove, test, update" 
+        echo "Action must be one of install, install_github, remove, test, update" 
         ;;
 
 esac
@@ -206,7 +279,19 @@ echo "${ACTION} the packages ${RLIST}..."
 echo
 
 if [ -n "$RGLOBAL" ]; then
-    install_global
+    if [ "$ACTION" != "install_github" ]; then
+        action_global "$RFILENAME" # execute tmp file with R commands
+    else
+        action_global "$RFILENAME" # execute tmp file built with test_code
+        check_devtools "$ENVFILE" "$RGLOBAL" # if devtools not installed, then exit
+        action_global "$GITHUBFILENAME" # execute tmp file built with install_github_code
+    fi
 else
-    install_user
+    if [ "$ACTION" != "install_github" ]; then
+        action_user "$RFILENAME" # execute tmp file with R commands
+    else
+        action_user "$RFILENAME" # execute tmp file built with test_code
+        check_devtools "$ENVFILENAME" "$RGLOBAL" # if devtools not installed, then exit
+        action_user "$GITHUBFILENAME" # execute tmp file built with install_github_code
+    fi
 fi
