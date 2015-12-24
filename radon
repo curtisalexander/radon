@@ -120,7 +120,7 @@ install_github_code() {
     cat <<EOF > /tmp/$2
 
 library('devtools')
-devtools::install_github($1)
+devtools::install_github(c($1))
 
 EOF
 }
