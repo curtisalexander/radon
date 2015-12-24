@@ -49,7 +49,11 @@ quote_list() {
 }
 
 install_global() {
-    sudo su - -c "R --vanilla < /tmp/$RFILENAME"
+    if [[ "$(uname)" == "Darwin" ]]; then
+        sudo R --vanilla < /tmp/$RFILENAME
+    else
+        sudo su - -c "R --vanilla < /tmp/$RFILENAME"
+    fi
     rm -f /tmp/$RFILENAME
 echo
 }
