@@ -18,19 +18,22 @@ ENVFILENAME=""
 
 display_help() {
     echo
-    echo "{install,remove,test,update} R packages.  By default performs action for the user and not globally."
+    echo "{install,install_github,remove,test,update} R packages.  By default performs action for the user and not globally."
     echo
     echo "Usage: ${0} [option...] [R packages]"
     echo
     echo "  -h, --help          display help"
     echo "  -g, --global        perform action globally"
     echo "  -i, --install       install R package(s)"
+    echo "  -i, --install       install R package(s) from github.com"
     echo "  -t, --test          test R package(s)"
     echo "  -r, --remove        remove R package(s)"
     echo "  -u, --update        update R package(s); if no package given update all packages"
     echo
     echo "Example: "
     echo "  ${0} --install dplyr,ggplot2 # install dplyr,ggplot2 packages for the user"
+    echo
+    echo "  ${0} --install hadley/rvest # install hadley/rvest package from github for the user"
     echo
     echo "  ${0} --remove dplyr,ggplot2 # remove dplyr,ggplot2 packages for the user"
     echo
