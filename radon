@@ -25,7 +25,7 @@ display_help() {
     echo "  -h, --help          display help"
     echo "  -g, --global        perform action globally"
     echo "  -i, --install       install R package(s)"
-    echo "  -i, --install       install R package(s) from github.com"
+    echo "  --install_github    install R package(s) from github.com"
     echo "  -t, --test          test R package(s)"
     echo "  -r, --remove        remove R package(s)"
     echo "  -u, --update        update R package(s); if no package given update all packages"
