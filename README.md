@@ -20,7 +20,7 @@ radon [option...] [R packages]
 ## Assumptions
 * If using `--global`, assumes ability to run sudo.
 * If using `--install`, package(s) must be available on CRAN.
-* If using `--install_github` package(s) are of the form username/package.
+* If using `--install_github`, package(s) are of the form username/package.
 * `devtools` package is required to install from github.
 * R packages must be comma delimited without quotes; see examples below.
 
