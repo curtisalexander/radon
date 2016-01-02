@@ -31,15 +31,11 @@ display_help() {
     echo "  -u, --update        update R package(s); if no package given update all packages"
     echo
     echo "Example: "
-    echo "  ${0} --install dplyr,ggplot2 # install dplyr,ggplot2 packages for the user"
-    echo
-    echo "  ${0} --install hadley/rvest # install hadley/rvest package from github for the user"
-    echo
-    echo "  ${0} --remove dplyr,ggplot2 # remove dplyr,ggplot2 packages for the user"
-    echo
-    echo "  ${0} --test dplyr,ggplot2 -g # test dplyr,ggplot2 packages globally"
-    echo
-    echo "  ${0} --update # update all packages for the user"
+    echo "  ${0} --install dplyr,ggplot2            # install dplyr,ggplot2 packages for the user"
+    echo "  ${0} --install_github hadley/rvest      # install hadley/rvest package from github for the user"
+    echo "  ${0} --remove dplyr,ggplot2             # remove dplyr,ggplot2 packages for the user"
+    echo "  ${0} --test dplyr,ggplot2 -g            # test dplyr,ggplot2 packages globally"
+    echo "  ${0} --update                           # update all packages for the user"
     echo
 }
 
