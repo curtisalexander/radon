@@ -34,5 +34,5 @@ radon --update                          # update all packages for the user
 ```
 
 ## [Standing on the shoulders](https://en.wikipedia.org/wiki/Standing_on_the_shoulders_of_giants)
-* Thanks to [Hadley Wickham](https://github.com/hadley) for his development of the [devtools](https://github.com/hadley/devtools)
+* Thanks to [Hadley Wickham](https://github.com/hadley) for his development of the [devtools](https://github.com/hadley/devtools) package.
 * Thanks to [Jeff Allen](https://github.com/trestletech) for a StackOverflow [answer](http://stackoverflow.com/questions/22298187/r-shiny-shiny-server-issue-with-finding-packages?answertab=votes#tab-top) which gave me the base idea to begin developing `radon`.
