@@ -26,13 +26,9 @@ radon [option...] [R packages]
 
 ## Examples
 ```
-radon --install dplyr,ggplot2 # install dplyr,ggplot2 packages for the user
-
-radon --install_github hadley/rvest # install hadley/rvest package from github.com for the user
-
-radon --remove dplyr,ggplot2 # remove dplyr,ggplot2 packages for the user
-
-radon --test dplyr,ggplot2 -g # test dplyr,ggplot2 packages globally
-
-radon --update # update all packages for the user
+radon --install dplyr,ggplot2           # install dplyr,ggplot2 packages for the user
+radon --install_github hadley/rvest     # install hadley/rvest package from github.com for the user
+radon --remove dplyr,ggplot2            # remove dplyr,ggplot2 packages for the user
+radon --test dplyr,ggplot2 -g           # test dplyr,ggplot2 packages globally
+radon --update                          # update all packages for the user
 ```
