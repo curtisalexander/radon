@@ -282,7 +282,7 @@ if [ -n "$RGLOBAL" ]; then
         action_global "$RFILENAME" # execute tmp file with R commands
     else
         action_global "$RFILENAME" # execute tmp file built with test_code
-        check_devtools "$ENVFILE" "$RGLOBAL" # if devtools not installed, then exit
+        check_devtools "$ENVFILENAME" "$RGLOBAL" # if devtools not installed, then exit
         action_global "$GITHUBFILENAME" # execute tmp file built with install_github_code
     fi
 else
