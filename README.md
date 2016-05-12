@@ -2,7 +2,7 @@
 
 **r** **ad**min **o**n \***n**ix
 
-{install,install_github,remove,test,update} R packages. By default performs action for the user and not globally.
+{install,install_github,install_local,remove,test,update} R packages. By default performs action for the user and not globally.
 
 ## Usage
 ```
@@ -12,6 +12,7 @@ radon [option...] [R packages]
     -g, --global        perform action globally
     -i, --install       install R package(s)
     --install_github    install R package(s) from github.com
+    --install_local     install R package(s) from filesystem
     -t, --test          test R package(s)
     -r, --remove        remove R package(s)
     -u, --update        update R package(s); if no package given update all packages
@@ -28,6 +29,7 @@ radon [option...] [R packages]
 ```
 radon --install dplyr,ggplot2           # install dplyr,ggplot2 packages for the user
 radon --install_github hadley/rvest     # install hadley/rvest package from github.com for the user
+radon --install_local dir/pkg.tgz       # install pkg.tgz package within dir/ on the local filesystem
 radon --remove dplyr,ggplot2            # remove dplyr,ggplot2 packages for the user
 radon --test dplyr,ggplot2 -g           # test dplyr,ggplot2 packages globally
 radon --update                          # update all packages for the user
