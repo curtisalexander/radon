@@ -29,7 +29,7 @@ radon [option...] [R packages]
 ```
 radon --install dplyr,ggplot2           # install dplyr,ggplot2 packages for the user
 radon --install_github hadley/rvest     # install hadley/rvest package from github.com for the user
-radon --install_local dir/pkg.tgz       # install pkg.tgz package within dir/ on the local filesystem
+radon --install_local dir/pkg.tar.gz    # install pkg.tar.gz package within dir/ on the local filesystem
 radon --remove dplyr,ggplot2            # remove dplyr,ggplot2 packages for the user
 radon --test dplyr,ggplot2 -g           # test dplyr,ggplot2 packages globally
 radon --update                          # update all packages for the user
