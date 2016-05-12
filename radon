@@ -156,15 +156,17 @@ f <- file("/tmp/$3")
 
 check_package <- function(pkg) {
     if (require(pkg, character.only = TRUE)) {
-        cat_string <- paste0(pkg, ' library loaded')
+        echo_string <- paste0('echo ', pkg, ' library loaded')
         writeLines("export INSTALLED=\"1\"", f)
         close(f)
     } else {
-        cat_string <- paste0(pkg, ' library did not load')
+        echo_string <- paste0('echo ', pkg, ' library did not load')
         writeLines("export INSTALLED=\"0\"", f)
         close(f)
     }
-    cat(cat_string)
+    system('echo')
+    system(echo_string)
+    system('echo')
 }
 
 sink('/dev/null') # suppress output
