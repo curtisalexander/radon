@@ -18,7 +18,8 @@ ENVFILENAME=""
 
 display_help() {
     echo
-    echo "{install,install_github,remove,test,update} R packages.  By default performs action for the user and not globally."
+    echo "{install,install_github,install_local,remove,test,update} R packages."
+    echo "  By default performs action for the user and not globally."
     echo
     echo "Usage: ${0} [option...] [R packages]"
     echo
@@ -26,6 +27,7 @@ display_help() {
     echo "  -g, --global        perform action globally"
     echo "  -i, --install       install R package(s)"
     echo "  --install_github    install R package(s) from github.com"
+    echo "  --install_local     install R package(s) from filesystem"
     echo "  -t, --test          test R package(s)"
     echo "  -r, --remove        remove R package(s)"
     echo "  -u, --update        update R package(s); if no package given update all packages"
@@ -33,6 +35,7 @@ display_help() {
     echo "Example: "
     echo "  ${0} --install dplyr,ggplot2            # install dplyr,ggplot2 packages for the user"
     echo "  ${0} --install_github hadley/rvest      # install hadley/rvest package from github for the user"
+    echo "  ${0} --install_local dir/pkg.tgz        # install pkg.tgz package within dir/ on the local filesystem"
     echo "  ${0} --remove dplyr,ggplot2             # remove dplyr,ggplot2 packages for the user"
     echo "  ${0} --test dplyr,ggplot2 -g            # test dplyr,ggplot2 packages globally"
     echo "  ${0} --update                           # update all packages for the user"
@@ -120,6 +123,17 @@ devtools::install_github(c($1))
 
 EOF
 }
+
+install_local_code() {
+    # $1 = RLIST
+    # $2 = RFILENAME
+    cat <<EOF > /tmp/$2
+
+install.packages(c($1), repos = NULL, type = 'source')
+
+EOF
+}
+
 remove_code() {
     # $1 = RLIST
     # $2 = RFILENAME
@@ -142,17 +156,15 @@ f <- file("/tmp/$3")
 
 check_package <- function(pkg) {
     if (require(pkg, character.only = TRUE)) {
-        echo_string <- paste0('echo ', pkg, ' library loaded')
+        cat_string <- paste0(pkg, ' library loaded')
         writeLines("export INSTALLED=\"1\"", f)
         close(f)
     } else {
-        echo_string <- paste0('echo ', pkg, ' library did not load')
+        cat_string <- paste0(pkg, ' library did not load')
         writeLines("export INSTALLED=\"0\"", f)
         close(f)
     }
-    system('echo')
-    system(echo_string)
-    system('echo')
+    cat(cat_string)
 }
 
 sink('/dev/null') # suppress output
@@ -213,6 +225,9 @@ while [[ $# > 0 ]]; do
         --install_github)
             ACTION="install_github"
             ;;
+        --install_local)
+            ACTION="install_local"
+            ;;
         -r | --remove)
             ACTION="remove"
             ;;
@@ -250,6 +265,14 @@ case $ACTION in # side effect is to produce tmp file containing R code
     install)
         install_code "$RLIST" "$RFILENAME"
         ;;
+    install_github)
+        test_code "$(quote_list "devtools")" "$RFILENAME" "$ENVFILENAME"
+        GITHUBFILENAME="$(create_tmp)"
+        install_github_code "$RLIST" "$GITHUBFILENAME"
+        ;;
+    install_local)
+        install_local_code "$RLIST" "$RFILENAME"
+        ;;
     remove)
         remove_code "$RLIST" "$RFILENAME"
         ;;
@@ -258,11 +281,6 @@ case $ACTION in # side effect is to produce tmp file containing R code
         ;;
     update)
         update_code "$RLIST" "$RFILENAME" "$CLILIST"
-        ;;
-    install_github)
-        test_code "$(quote_list "devtools")" "$RFILENAME" "$ENVFILENAME"
-        GITHUBFILENAME="$(create_tmp)"
-        install_github_code "$RLIST" "$GITHUBFILENAME"
         ;;
     *)
         echo "Action must be one of install, install_github, remove, test, update" 
