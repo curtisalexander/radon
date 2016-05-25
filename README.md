@@ -2,7 +2,7 @@
 
 **r** **ad**min **o**n \***n**ix
 
-{install,install_github,install_local,remove,test,update} R packages. By default performs action for the user and not globally.
+{install, install_github, install_local, remove, test, update} R packages. By default performs action for the user and not globally.
 
 ## Usage
 ```
