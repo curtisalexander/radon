@@ -92,7 +92,7 @@ action_global() {
     else
         sudo su - -c "R --vanilla < /tmp/$1"
     fi
-    rm -f /tmp/$1
+    sudo rm -f /tmp/$1
 }
 
 action_user() {
