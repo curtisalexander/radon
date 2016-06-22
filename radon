@@ -50,7 +50,11 @@ check_devtools() {
     # $1 = ENVFILENAME
     # $2 = RGLOBAL
     source /tmp/$1 # read file to get the value of INSTALLED
-    rm -f /tmp/$1
+    if [ "$RGLOBAL" == "Y" ]; then
+        sudo rm -f /tmp/$1
+    else
+        rm -f /tmp/$1
+    fi
 
     if [ "$INSTALLED" == "1" ]; then
         echo
