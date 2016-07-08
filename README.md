@@ -11,7 +11,7 @@ radon: manage R packages
   * install  * install_github  * install_local  * install_prior
   * remove  * test  * update
 
-Usage: /Users/calexander/bin/radon [option...] [R packages]
+Usage: radon [option...] [R packages]
 
   -h, --help          display help
   -g, --global        perform action globally
