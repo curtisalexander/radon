@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 ########
 # vars #
@@ -11,6 +11,7 @@ INSTALLED=""
 RFILENAME=""
 GITHUBFILENAME=""
 ENVFILENAME=""
+PRIORFILENAME=""
 
 ########
 # fncs #
@@ -18,27 +19,33 @@ ENVFILENAME=""
 
 display_help() {
     echo
-    echo "{install,install_github,install_local,remove,test,update} R packages."
-    echo "  By default performs action for the user and not globally."
+    echo "radon: manage R packages"
+    echo
+    echo "  * install  * install_github  * install_local  * install_prior"
+    echo "  * remove  * test  * update"
     echo
     echo "Usage: ${0} [option...] [R packages]"
     echo
     echo "  -h, --help          display help"
     echo "  -g, --global        perform action globally"
-    echo "  -i, --install       install R package(s)"
-    echo "  --install_github    install R package(s) from github.com"
-    echo "  --install_local     install R package(s) from filesystem"
-    echo "  -t, --test          test R package(s)"
-    echo "  -r, --remove        remove R package(s)"
-    echo "  -u, --update        update R package(s); if no package given update all packages"
+    echo "  -i, --install       install R pkg(s)"
+    echo "  --install_github    install R pkg(s) from github.com"
+    echo "  --install_local     install R pkg(s) from filesystem"
+    echo "  --install_prior     install prior version of R pkg"
+    echo "  -r, --remove        remove R pkg(s)"
+    echo "  -t, --test          test R pkg(s)"
+    echo "  -u, --update        update R pkg(s); if no pkg given update all pkgs"
+    echo 
+    echo "  By default performs action for the user and not globally."
     echo
-    echo "Example: "
-    echo "  ${0} --install dplyr,ggplot2            # install dplyr,ggplot2 packages for the user"
-    echo "  ${0} --install_github hadley/rvest      # install hadley/rvest package from github for the user"
-    echo "  ${0} --install_local dir/pkg.tar.gz     # install pkg.tar.gz package within dir/ on the local filesystem"
-    echo "  ${0} --remove dplyr,ggplot2             # remove dplyr,ggplot2 packages for the user"
-    echo "  ${0} --test dplyr,ggplot2 -g            # test dplyr,ggplot2 packages globally"
-    echo "  ${0} --update                           # update all packages for the user"
+    echo "Examples: "
+    echo "  ${0} --install dplyr,ggplot2            # install dplyr,ggplot2 pkgs for the user"
+    echo "  ${0} --install_github hadley/rvest      # install hadley/rvest pkgs from github for the user"
+    echo "  ${0} --install_local dir/pkg.tar.gz     # install pkg.tar.gz pkg within dir/ on the local filesystem for the user"
+    echo "  ${0} --install_prior dplyr,0.4.3 -g     # install version 0.4.3 of the dplyr pkg globally"
+    echo "  ${0} --remove dplyr,ggplot2             # remove dplyr,ggplot2 pkgs for the user"
+    echo "  ${0} --test dplyr,ggplot2 -g            # test dplyr,ggplot2 pkgs globally"
+    echo "  ${0} --update                           # update all pkgs for the user"
     echo
 }
 
@@ -46,35 +53,44 @@ create_tmp() {
     echo "$(cat /dev/urandom | LC_CTYPE=C tr -dc 'a-zA-Z0-9' | fold -w 32 | head -n 1)"
 }
 
-check_devtools() {
+check_pkg() {
     # $1 = ENVFILENAME
     # $2 = RGLOBAL
-    source /tmp/$1 # read file to get the value of INSTALLED
-    if [ "$RGLOBAL" == "Y" ]; then
+	# $3 = RPACKAGE
+    source /tmp/$1 # read file to get the value(s) of PKG_INSTALLED
+    if [ "$2" == "Y" ]; then
         sudo rm -f /tmp/$1
     else
         rm -f /tmp/$1
     fi
 
-    if [ "$INSTALLED" == "1" ]; then
-        echo
-        echo "devtools is installed"
-        echo
-    else
-        echo
-        echo "please install devtools"
-        echo
-        if [ "$2" == "Y" ]; then
-            echo "    $ radon --install devtools -g"
-        else
-            echo "    $ radon --install devtools"
-        fi
-        echo
-        exit 0
-    fi
+	for pkg in $3; do 
+        # to upper ==> DEVTOOLS_INSTALLED, etc.
+        # this is crazy -- I should just turn this into 
+        #   a docopt Rscript
+        PKG_UPPER="$(echo ${pkg} | tr [a-z] [A-Z])"
+        eval PKG_INSTALLED="\$${PKG_UPPER}_INSTALLED"     # return DEVTOOLS_INSTALLED
+        eval PKG_INSTALLED_VALUE="\$${PKG_INSTALLED}"  # return value of DEVTOOLS_INSTALLED
+		if [ "$PKG_INSTALLED_VALUE" == "1" ]; then
+			echo
+			echo "$pkg is installed"
+			echo
+		else
+			echo
+			echo "please install $pkg"
+			echo
+			if [ "$2" == "Y" ]; then
+				echo "    $ radon --install $pkg --global"
+			else
+				echo "    $ radon --install $pkg"
+			fi
+			echo
+            exit 0
+		fi
+	done
 }
 
-quote_list() {
+quote_list_comma() {
     # $1 = CLILIST
     local _RLIST=""
     IFS=","
@@ -89,63 +105,199 @@ quote_list() {
     echo "$_RLIST"
 }
 
+quote_list_space() {
+    # $1 = CLILIST
+    local _RLIST=""
+    IFS=","
+    for i in $1; do
+        if [ -z "$_RLIST" ]; then
+            _RLIST="'${i}'"
+            # RLIST="'${i}'"
+        else
+            _RLIST+=" '${i}'"
+        fi
+    done
+    echo "$_RLIST"
+}
+
 action_global() {
     # $1 = RFILENAME | GITHUBFILENAME
     if [[ "$(uname)" == "Darwin" ]]; then
-        sudo R --vanilla < /tmp/$1
+        sudo Rscript --vanilla /tmp/$1
     else
-        sudo su - -c "R --vanilla < /tmp/$1"
+        sudo su - -c "Rscript --vanilla /tmp/$1"
     fi
     sudo rm -f /tmp/$1
 }
 
 action_user() {
     # $1 = RFILENAME | GITHUBFILENAME
-    R --vanilla < /tmp/$1
+    Rscript --vanilla /tmp/$1
+    rm -f /tmp/$1
+}
+
+# if need to read in entries from .Renviron file
+action_global_environ() {
+    # $1 = RFILENAME | GITHUBFILENAME
+    if [[ "$(uname)" == "Darwin" ]]; then
+        # implies that .Renviron file is read
+        sudo Rscript --no-site-file --no-init-file --no-restore /tmp/$1
+    else
+        # implies that .Renviron file is read
+        sudo su - -c "Rscript --no-site-file --no-init-file --no-restore /tmp/$1"
+    fi
+    sudo rm -f /tmp/$1
+}
+
+action_user_environ() {
+    # $1 = RFILENAME | GITHUBFILENAME
+    # implies that .Renviron file is read
+    Rscript --no-site-file --no-init-file --no-restore /tmp/$1
     rm -f /tmp/$1
 }
 
 install_code() {
     # $1 = RLIST
     # $2 = RFILENAME
-    cat <<EOF > /tmp/$2
+    # $3 = RGLOBAL
+    if [ -z "$3" ]; then
+        cat <<EOF > /tmp/$2
 
-options('repos'='http://cran.rstudio.com')
-
+options('repos'='https://cran.rstudio.com')
+# will install into the first library found in .libPaths()
+#   which is usually the user directory
 install.packages(c($1))
 
 EOF
+    else
+        cat <<EOF > /tmp/$2
+options('repos'='https://cran.rstudio.com')
+# .Library is the system, or global, library
+install.packages(c($1), lib = .Library)
+
+EOF
+    fi
 }
 
 install_github_code() {
     # $1 = RLIST
     # $2 = GITHUBFILENAME
-    cat <<EOF > /tmp/$2
+    # $3 = RGLOBAL
+    if [ -z "$3" ]; then
+        cat <<EOF > /tmp/$2
 
-library('devtools')
 devtools::install_github(c($1))
 
 EOF
+    else
+        cat <<EOF > /tmp/$2
+
+devtools::install_github(c($1), lib = .Library)
+
+EOF
+    fi
 }
 
 install_local_code() {
     # $1 = RLIST
     # $2 = RFILENAME
-    cat <<EOF > /tmp/$2
+    # $3 = RGLOBAL
+    if [ -z "$3" ]; then
+        cat <<EOF > /tmp/$2
 
 install.packages(c($1), repos = NULL, type = 'source')
 
 EOF
+    else
+        cat <<EOF > /tmp/$2
+
+install.packages(c($1), repos = NULL, type = 'source', lib = .Library)
+
+EOF
+    fi
+}
+
+install_prior_code() {
+    # $1 = RLIST
+    # $2 = RFILENAME
+    # $3 = RGLOBAL
+    cat <<EOF > /tmp/$2
+
+prior_install <- function (pkg, pkg_version, cainfo = NULL, ...) {
+    pkg_url <- paste0("https://cran.rstudio.com/src/contrib/Archive/",
+                      pkg, "/", pkg, "_", pkg_version, ".tar.gz")
+    safe_http_error <- purrr::safely(httr::http_error)
+    if (!is.null(cainfo)) {
+        httr::set_config(httr::config(cainfo = cainfo))
+        pkg_url_error <- safe_http_error(pkg_url)
+        httr::reset_config()
+    } else {
+        pkg_url_error <- safe_http_error(pkg_url)
+    }
+    if (is.null(pkg_url_error\$result)) {
+        stop(paste0("The url ", pkg_url, " returned an HTTP error:\\n",
+                    pkg_url_error\$error))
+    } else {
+        install.packages(pkg_url, repos = NULL, type = "source", ...)
+    }
+}
+
+prior_code_list = c($1)
+httr_cainfo <- Sys.getenv("HTTR_CAINFO")
+EOF
+
+    if [ -z "$3" ]; then
+        cat <<EOF >> /tmp/$2
+if(httr_cainfo == "") {
+	prior_install(pkg = prior_code_list[1],
+				  pkg_version = prior_code_list[2])
+} else {
+	prior_install(pkg = prior_code_list[1],
+				  pkg_version = prior_code_list[2],
+				  #cainfo = httr_cainfo
+                  )
+}
+
+EOF
+    else
+        cat <<EOF >> /tmp/$2
+if(httr_cainfo == "") {
+	prior_install(pkg = prior_code_list[1],
+				  pkg_version = prior_code_list[2],
+                  lib = .Library)
+} else {
+	prior_install(pkg = prior_code_list[1],
+				  pkg_version = prior_code_list[2],
+				  #cainfo = httr_cainfo,
+                  lib = .Library)
+}
+
+EOF
+
+    fi
 }
 
 remove_code() {
     # $1 = RLIST
     # $2 = RFILENAME
-    cat <<EOF > /tmp/$2
+    # $3 = RGLOBAL
+    if [ -z "$3" ]; then
+        cat <<EOF > /tmp/$2
 
+# will remove from the first library found in .libPaths()
+#   which is usually the user directory
 remove.packages(c($1))
 
 EOF
+    else
+        cat <<EOF > /tmp/$2
+
+# .Library is the system, or global, library
+remove.packages(c($1), lib = .Library)
+
+EOF
+
+    fi
 }
 
 test_code() {
@@ -154,32 +306,29 @@ test_code() {
     # $3 = ENVFILENAME
     cat <<EOF > /tmp/$2
 
-options('repos'='http://cran.rstudio.com', 'warn'=-1)
-
-f <- file("/tmp/$3")
+options('warn'=-1)
 
 check_package <- function(pkg) {
     if (require(pkg, character.only = TRUE)) {
         echo_string <- paste0('echo ', pkg, ' library loaded')
-        writeLines("export INSTALLED=\"1\"", f)
-        close(f)
+        cat(paste0('export ', toupper(pkg), '_INSTALLED=\"1\"', '\\n'),
+            file = '/tmp/$3',
+            append = TRUE)
     } else {
         echo_string <- paste0('echo ', pkg, ' library did not load')
-        writeLines("export INSTALLED=\"0\"", f)
-        close(f)
+        cat(paste0('export ', toupper(pkg), '_INSTALLED=\"0\"', '\\n'),
+            file = '/tmp/$3',
+            append = TRUE)
     }
     system('echo')
     system(echo_string)
     system('echo')
 }
 
-sink('/dev/null') # suppress output
-
 pkgs <- c($1)
 
-lapply(pkgs, check_package)
+invisible(lapply(pkgs, check_package))
 
-sink() # resume producing output
 options('warn'=0) # reset warnings
 
 EOF
@@ -192,7 +341,7 @@ update_code() {
     if [ -z "$3" ]; then
         cat <<EOF > /tmp/$2
         
-options('repos'='http://cran.rstudio.com')
+options('repos'='https://cran.rstudio.com')
 
 update.packages(ask = FALSE)
 
@@ -200,7 +349,7 @@ EOF
     else
         cat <<EOF > /tmp/$2
 
-options('repos'='http://cran.rstudio.com')
+options('repos'='https://cran.rstudio.com')
 
 update.packages(oldPkgs = c($1), ask = FALSE)
 
@@ -234,6 +383,9 @@ while [[ $# > 0 ]]; do
         --install_local)
             ACTION="install_local"
             ;;
+        --install_prior)
+            ACTION="install_prior"
+            ;;
         -r | --remove)
             ACTION="remove"
             ;;
@@ -261,26 +413,30 @@ done
 
 RFILENAME="$(create_tmp)"
 ENVFILENAME="$(create_tmp)"
-RLIST="$(quote_list "$CLILIST")"    # return RLIST
-                                    # RLIST is a quoted list of packages
-                                    #   e.g. dplyr,ggplot2 becomes 'dplyr','ggplot2'
-
+RLIST="$(quote_list_comma "$CLILIST")"    # return RLIST
+                                          # RLIST is a quoted list of packages
+                                          #   e.g. dplyr,ggplot2 becomes 'dplyr','ggplot2'
 
 case $ACTION in # side effect is to produce tmp file containing R code
                 # install_github creates two tmp files containing R code
     install)
-        install_code "$RLIST" "$RFILENAME"
+        install_code "$RLIST" "$RFILENAME" "$RGLOBAL"
         ;;
     install_github)
-        test_code "$(quote_list "devtools")" "$RFILENAME" "$ENVFILENAME"
+        test_code "$(quote_list_comma "devtools")" "$RFILENAME" "$ENVFILENAME"
         GITHUBFILENAME="$(create_tmp)"
-        install_github_code "$RLIST" "$GITHUBFILENAME"
+        install_github_code "$RLIST" "$GITHUBFILENAME" "$RGLOBAL"
         ;;
     install_local)
-        install_local_code "$RLIST" "$RFILENAME"
+        install_local_code "$RLIST" "$RFILENAME" "$RGLOBAL"
+        ;;
+    install_prior)
+        test_code "$(quote_list_comma "purrr,httr")" "$RFILENAME" "$ENVFILENAME"
+        PRIORFILENAME="$(create_tmp)"
+        install_prior_code "$RLIST" "$PRIORFILENAME" "$RGLOBAL"
         ;;
     remove)
-        remove_code "$RLIST" "$RFILENAME"
+        remove_code "$RLIST" "$RFILENAME" "$RGLOBAL"
         ;;
     test)
         test_code "$RLIST" "$RFILENAME" "$ENVFILENAME" 
@@ -289,7 +445,7 @@ case $ACTION in # side effect is to produce tmp file containing R code
         update_code "$RLIST" "$RFILENAME" "$CLILIST"
         ;;
     *)
-        echo "Action must be one of install, install_github, remove, test, update" 
+        echo "Action must be one of install, install_github, install_local, install_prior, remove, test, update" 
         ;;
 
 esac
@@ -302,19 +458,29 @@ echo "${ACTION} the packages ${RLIST}..."
 echo
 
 if [ -n "$RGLOBAL" ]; then
-    if [ "$ACTION" != "install_github" ]; then
+    if [ "$ACTION" != "install_github" ] && [ "$ACTION" != "install_prior" ]; then
         action_global "$RFILENAME" # execute tmp file with R commands
-    else
+    elif [ "$ACTION" == "install_github" ]; then
         action_global "$RFILENAME" # execute tmp file built with test_code
-        check_devtools "$ENVFILENAME" "$RGLOBAL" # if devtools not installed, then exit
-        action_global "$GITHUBFILENAME" # execute tmp file built with install_github_code
+        check_pkg "$ENVFILENAME" "$RGLOBAL" "$(quote_list_space "devtools")" # if devtools not installed, then exit
+        action_global_environ "$GITHUBFILENAME" # execute tmp file built with install_github_code
+	# "$ACTION" == "install_prior"
+	else
+        action_global "$RFILENAME" # execute tmp file built with test_code
+        check_pkg "$ENVFILENAME" "$RGLOBAL" "$(quote_list_space "purrr,httr")" # if purrr and httr not installed, then exit
+        action_global_environ "$PRIORFILENAME" # execute tmp file built with install_prior_code
     fi
 else
-    if [ "$ACTION" != "install_github" ]; then
+    if [ "$ACTION" != "install_github" ] && [ "$ACTION" != "install_prior" ]; then
         action_user "$RFILENAME" # execute tmp file with R commands
-    else
+    elif [ "$ACTION" == "install_github" ]; then
         action_user "$RFILENAME" # execute tmp file built with test_code
-        check_devtools "$ENVFILENAME" "$RGLOBAL" # if devtools not installed, then exit
-        action_user "$GITHUBFILENAME" # execute tmp file built with install_github_code
+        check_pkg "$ENVFILENAME" "$RGLOBAL" "$(quote_list_space "devtools")" # if devtools not installed, then exit
+        action_user_environ "$GITHUBFILENAME" # execute tmp file built with install_github_code
+	# "$ACTION" == "install_prior"
+	else
+        action_user "$RFILENAME" # execute tmp file built with test_code
+        check_pkg "$ENVFILENAME" "$RGLOBAL" "$(quote_list_space "purrr,httr")" # if purrr and httr not installed, then exit
+        action_user_environ "$PRIORFILENAME" # execute tmp file built with install_prior_code
     fi
 fi
