@@ -1,11 +1,12 @@
 # radon
 
-**r** **ad**min **o**n \***n**ix: manage R packages
+**r** **ad**min **o**n \***n**ix
 
 {install, install_github, install_local, install_prior, remove, test, update} R packages.
 
 ## Usage
 ```
+radon: manage R packages
 
   * install  * install_github  * install_local  * install_prior
   * remove  * test  * update
