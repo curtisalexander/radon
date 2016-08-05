@@ -71,7 +71,7 @@ check_pkg() {
         PKG_UPPER="$(echo ${pkg} | tr [a-z] [A-Z])"
         eval PKG_INSTALLED="\$${PKG_UPPER}_INSTALLED"     # return DEVTOOLS_INSTALLED
         eval PKG_INSTALLED_VALUE="\$${PKG_INSTALLED}"  # return value of DEVTOOLS_INSTALLED
-		if [[ "$PKG_INSTALLED_VALUE" == "1" ]]; then
+		if [[ "${PKG_INSTALLED_VALUE}" == "1" ]]; then
 			echo
 			echo "$pkg is installed"
 			echo
