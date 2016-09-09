@@ -211,7 +211,7 @@ EOF
     else
         cat <<EOF > /tmp/$2
 
-devtools::install_github(c($1), lib = .Library)
+withr::with_libpaths(.Library, devtools::install_github(c($1)))
 
 EOF
     fi
