@@ -120,10 +120,16 @@ quote_list_space() {
     echo "$_RLIST"
 }
 
+# for the time being, install everything into the system library
+# on OSX requires changing the owner of the library directory
+# execute the following on OSX
+#   cd /Library/Frameworks/R.framework/Resources/library
+#   chown -R user:group ../library
 action_global() {
     # $1 = RFILENAME | GITHUBFILENAME
     if [[ "$(uname)" == "Darwin" ]]; then
-        sudo Rscript --vanilla /tmp/$1
+        Rscript --vanilla /tmp/$1
+        # sudo Rscript --vanilla /tmp/$1
     else
         sudo su - -c "Rscript --vanilla /tmp/$1"
     fi
@@ -137,11 +143,18 @@ action_user() {
 }
 
 # if need to read in entries from .Renviron file
+
+# for the time being, install everything into the system library
+# on OSX requires changing the owner of the library directory
+# execute the following on OSX
+#   cd /Library/Frameworks/R.framework/Resources/library
+#   chown -R user:group ../library
 action_global_environ() {
     # $1 = RFILENAME | GITHUBFILENAME
     if [[ "$(uname)" == "Darwin" ]]; then
         # implies that .Renviron file is read
-        sudo Rscript --no-site-file --no-init-file --no-restore /tmp/$1
+        # sudo Rscript --no-site-file --no-init-file --no-restore /tmp/$1
+        Rscript --no-site-file --no-init-file --no-restore /tmp/$1
     else
         # implies that .Renviron file is read
         sudo su - -c "Rscript --no-site-file --no-init-file --no-restore /tmp/$1"
@@ -166,7 +179,8 @@ install_code() {
 options('repos'='https://cran.rstudio.com')
 # will install into the first library found in .libPaths()
 #   which is usually the user directory
-install.packages(c($1))
+# install.packages(c($1))
+install.packages(c($1), lib = .Library)
 
 EOF
     else
