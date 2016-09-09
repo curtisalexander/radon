@@ -59,7 +59,8 @@ check_pkg() {
 	# $3 = RPACKAGE
     source /tmp/$1 # read file to get the value(s) of PKG_INSTALLED
     if [[ "$2" == "Y" ]]; then
-        sudo rm -f /tmp/$1
+        rm -f /tmp/$1
+        # sudo rm -f /tmp/$1
     else
         rm -f /tmp/$1
     fi
@@ -130,10 +131,12 @@ action_global() {
     if [[ "$(uname)" == "Darwin" ]]; then
         Rscript --vanilla /tmp/$1
         # sudo Rscript --vanilla /tmp/$1
+        rm -f /tmp/$1
     else
         sudo su - -c "Rscript --vanilla /tmp/$1"
+        sudo rm -f /tmp/$1
     fi
-    sudo rm -f /tmp/$1
+    # sudo rm -f /tmp/$1
 }
 
 action_user() {
@@ -155,11 +158,13 @@ action_global_environ() {
         # implies that .Renviron file is read
         # sudo Rscript --no-site-file --no-init-file --no-restore /tmp/$1
         Rscript --no-site-file --no-init-file --no-restore /tmp/$1
+        rm -f /tmp/$1
     else
         # implies that .Renviron file is read
         sudo su - -c "Rscript --no-site-file --no-init-file --no-restore /tmp/$1"
+        sudo rm -f /tmp/$1
     fi
-    sudo rm -f /tmp/$1
+    # sudo rm -f /tmp/$1
 }
 
 action_user_environ() {
