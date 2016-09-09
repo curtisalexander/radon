@@ -59,8 +59,7 @@ check_pkg() {
 	# $3 = RPACKAGE
     source /tmp/$1 # read file to get the value(s) of PKG_INSTALLED
     if [[ "$2" == "Y" ]]; then
-        rm -f /tmp/$1
-        # sudo rm -f /tmp/$1
+        sudo rm -f /tmp/$1
     else
         rm -f /tmp/$1
     fi
@@ -121,22 +120,14 @@ quote_list_space() {
     echo "$_RLIST"
 }
 
-# for the time being, install everything into the system library
-# on OSX requires changing the owner of the library directory
-# execute the following on OSX
-#   cd /Library/Frameworks/R.framework/Resources/library
-#   chown -R user:group ../library
 action_global() {
     # $1 = RFILENAME | GITHUBFILENAME
     if [[ "$(uname)" == "Darwin" ]]; then
-        Rscript --vanilla /tmp/$1
-        # sudo Rscript --vanilla /tmp/$1
-        rm -f /tmp/$1
+        sudo Rscript --vanilla /tmp/$1
     else
         sudo su - -c "Rscript --vanilla /tmp/$1"
-        sudo rm -f /tmp/$1
     fi
-    # sudo rm -f /tmp/$1
+    sudo rm -f /tmp/$1
 }
 
 action_user() {
@@ -146,25 +137,16 @@ action_user() {
 }
 
 # if need to read in entries from .Renviron file
-
-# for the time being, install everything into the system library
-# on OSX requires changing the owner of the library directory
-# execute the following on OSX
-#   cd /Library/Frameworks/R.framework/Resources/library
-#   chown -R user:group ../library
 action_global_environ() {
     # $1 = RFILENAME | GITHUBFILENAME
     if [[ "$(uname)" == "Darwin" ]]; then
         # implies that .Renviron file is read
-        # sudo Rscript --no-site-file --no-init-file --no-restore /tmp/$1
-        Rscript --no-site-file --no-init-file --no-restore /tmp/$1
-        rm -f /tmp/$1
+        sudo Rscript --no-site-file --no-init-file --no-restore /tmp/$1
     else
         # implies that .Renviron file is read
         sudo su - -c "Rscript --no-site-file --no-init-file --no-restore /tmp/$1"
-        sudo rm -f /tmp/$1
     fi
-    # sudo rm -f /tmp/$1
+    sudo rm -f /tmp/$1
 }
 
 action_user_environ() {
@@ -184,12 +166,12 @@ install_code() {
 options('repos'='https://cran.rstudio.com')
 # will install into the first library found in .libPaths()
 #   which is usually the user directory
-# install.packages(c($1))
-install.packages(c($1), lib = .Library)
+install.packages(c($1))
 
 EOF
     else
         cat <<EOF > /tmp/$2
+
 options('repos'='https://cran.rstudio.com')
 # .Library is the system, or global, library
 install.packages(c($1), lib = .Library)
@@ -211,6 +193,8 @@ EOF
     else
         cat <<EOF > /tmp/$2
 
+# use withr to update the library path as install_github installs
+#   into .libPaths()[1], which is usually the user directory
 withr::with_libpaths(.Library, devtools::install_github(c($1)))
 
 EOF
