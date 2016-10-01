@@ -139,13 +139,13 @@ action_user() {
 # if need to read in entries from .Renviron file
 action_global_environ() {
     # $1 = RFILENAME | GITHUBFILENAME
-    if [[ "$(uname)" == "Darwin" ]]; then
+    # if [[ "$(uname)" == "Darwin" ]]; then
         # implies that .Renviron file is read
-        sudo Rscript --no-site-file --no-init-file --no-restore /tmp/$1
-    else
-        # implies that .Renviron file is read
-        sudo su - -c "Rscript --no-site-file --no-init-file --no-restore /tmp/$1"
-    fi
+    #    sudo Rscript --no-site-file --no-init-file --no-restore /tmp/$1
+    #else
+    # implies that .Renviron file is read
+    sudo Rscript --no-site-file --no-init-file --no-restore /tmp/$1
+    #fi
     sudo rm -f /tmp/$1
 }
 
