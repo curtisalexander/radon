@@ -22,7 +22,7 @@ display_help() {
     echo "radon: manage R packages"
     echo
     echo "  * install  * install_github  * install_local  * install_prior"
-    echo "  * remove  * test  * update"
+    echo "  * remove   * test            * update"
     echo
     echo "Usage: ${0} [option...] [R packages]"
     echo
@@ -42,6 +42,7 @@ display_help() {
     echo "  ${0} --install dplyr,ggplot2            # install dplyr,ggplot2 pkgs for the user"
     echo "  ${0} --install_github hadley/rvest      # install hadley/rvest pkgs from github for the user"
     echo "  ${0} --install_local dir/pkg.tar.gz     # install pkg.tar.gz pkg within dir/ on the local filesystem for the user"
+    echo "                                          # see https://github.com/curtisalexander/gh-dl for an R script to download an R package as a tarball"
     echo "  ${0} --install_prior dplyr,0.4.3 -g     # install version 0.4.3 of the dplyr pkg globally"
     echo "  ${0} --remove dplyr,ggplot2             # remove dplyr,ggplot2 pkgs for the user"
     echo "  ${0} --test dplyr,ggplot2 -g            # test dplyr,ggplot2 pkgs globally"
@@ -421,7 +422,7 @@ RLIST="$(quote_list_comma "$CLILIST")"    # return RLIST
                                           #   e.g. dplyr,ggplot2 becomes 'dplyr','ggplot2'
 
 case $ACTION in # side effect is to produce tmp file containing R code
-                # install_github creates two tmp files containing R code
+                # install_github and install_prior create two tmp files containing R code
     install)
         install_code "$RLIST" "$RFILENAME" "$RGLOBAL"
         ;;
@@ -449,7 +450,7 @@ case $ACTION in # side effect is to produce tmp file containing R code
         ;;
     *)
         echo "Action must be one of install, install_github, install_local, install_prior, remove, test, update"
-        exit
+        exit 0
         ;;
 
 esac
@@ -488,3 +489,4 @@ else
         action_user_environ "$PRIORFILENAME" # execute tmp file built with install_prior_code
     fi
 fi
+
