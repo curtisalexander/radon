@@ -448,7 +448,8 @@ case $ACTION in # side effect is to produce tmp file containing R code
         update_code "$RLIST" "$RFILENAME" "$CLILIST"
         ;;
     *)
-        echo "Action must be one of install, install_github, install_local, install_prior, remove, test, update" 
+        echo "Action must be one of install, install_github, install_local, install_prior, remove, test, update"
+        exit
         ;;
 
 esac
