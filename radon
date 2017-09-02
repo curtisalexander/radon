@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 
+
 ########
 # vars #
 ########
@@ -12,6 +13,7 @@ RFILENAME=""
 GITHUBFILENAME=""
 ENVFILENAME=""
 PRIORFILENAME=""
+
 
 ########
 # fncs #
@@ -361,6 +363,7 @@ EOF
     fi
 }
 
+
 ########
 # args #
 ########
@@ -411,6 +414,7 @@ while [[ $# > 0 ]]; do
 
 done
 
+
 ##########
 # R code #
 ##########
@@ -450,10 +454,14 @@ case $ACTION in # side effect is to produce tmp file containing R code
         ;;
     *)
         echo "Action must be one of install, install_github, install_local, install_prior, remove, test, update"
+        echo ""
+        echo "For a more detailed explanation of options, including examples, please run"
+        echo "  ${0} --help"
         exit 0
         ;;
 
 esac
+
 
 #######
 # run #
